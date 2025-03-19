@@ -7,3 +7,4 @@ spacy
 openpyxl
 rapidfuzz
 python-dotenv
+gunicorn
