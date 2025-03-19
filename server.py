@@ -22,7 +22,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Database connection string from environment variable (fallback to default if not set)
-DSN = os.getenv("DATABASE_URL", "postgresql://admin:useradmin@postgresql-194388-0.cloudclusters.net:19608/useradmin")
+DSN = os.getenv("DATABASE_URL", "postgresql://admin:admin123@postgresql-194388-0.cloudclusters.net:19608/gsheet")
 
 # Load spaCy model
 try:
@@ -275,9 +275,6 @@ def get_table_data():
     except Exception as e:
         logging.error(f"Failed to fetch table data: {e}")
         return jsonify({"error": f"Failed to fetch table data: {e}"}), 500
-
-# Additional endpoints (upload, list tables, update, delete) remain unchanged...
-# Ensure each endpoint follows proper error handling and uses the above configurations.
 
 if __name__ == "__main__":
     # Do not use debug mode in production.
