@@ -31,12 +31,12 @@ logging.debug("spaCy model loaded.")
 
 # PostgreSQL database connection using connection string URL
 def get_db_connection():
-dsn = "postgresql://admin:useradmin@postgresql-194388-0.cloudclusters.net:19608/useradmin"
-    logging.debug(f"Connecting to DB with DSN: {dsn}")
+    dsn = "postgresql://admin:useradmin@postgresql-194388-0.cloudclusters.net:19608/useradmin"
     return psycopg2.connect(dsn)
 
+
 def get_db_engine():
-dsn = "postgresql://admin:useradmin@postgresql-194388-0.cloudclusters.net:19608/useradmin"
+    dsn = "postgresql://admin:useradmin@postgresql-194388-0.cloudclusters.net:19608/useradmin"
     logging.debug(f"Creating SQLAlchemy engine with DSN: {dsn}")
     engine = create_engine(dsn)
     return engine
