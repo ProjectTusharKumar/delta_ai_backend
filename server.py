@@ -516,7 +516,10 @@ def upload_employees():
         logging.error(f"Failed to upload employee data: {str(e)}")
         return jsonify({"status": "error", "message": f"Failed to upload data: {str(e)}"}), 500
 
-
 if __name__ == "__main__":
+    import os
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    # Do not set debug=True in production!
+    app.run(host="0.0.0.0", port=port)
+
+
