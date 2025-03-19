@@ -6,3 +6,4 @@ pandas
 spacy
 openpyxl
 rapidfuzz
+python-dotenv
