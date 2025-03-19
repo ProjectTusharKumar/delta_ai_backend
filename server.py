@@ -9,6 +9,10 @@ from flask_cors import CORS
 from rapidfuzz import fuzz, process
 import pandas as pd
 from sqlalchemy import create_engine
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
@@ -53,7 +57,7 @@ def check_db_connection():
         return False, f"Database connection failed: {str(e)}"
 
 # OpenRouter API configuration – update with your API key
-OPENROUTER_API_KEY = "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"  # <-- Replace with your API key
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_MODEL = "deepseek/deepseek-chat"    # Provided model name
 
 # Define valid schema names (fields available in the employees table)
