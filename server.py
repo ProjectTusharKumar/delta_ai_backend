@@ -20,6 +20,8 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(mes
 app = Flask(__name__)
 CORS(app)
 
+dsn = "postgresql://admin:useradmin@postgresql-194388-0.cloudclusters.net:19608/useradmin"
+
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
 
@@ -29,12 +31,12 @@ logging.debug("spaCy model loaded.")
 
 # PostgreSQL database connection using connection string URL
 def get_db_connection():
-    dsn = "postgresql://admin:admin@postgresql-194388-0.cloudclusters.net:19608/useradmin"
+dsn = "postgresql://admin:useradmin@postgresql-194388-0.cloudclusters.net:19608/useradmin"
     logging.debug(f"Connecting to DB with DSN: {dsn}")
     return psycopg2.connect(dsn)
 
 def get_db_engine():
-    dsn = "postgresql://admin:admin@postgresql-194388-0.cloudclusters.net:19608/useradmin"
+dsn = "postgresql://admin:useradmin@postgresql-194388-0.cloudclusters.net:19608/useradmin"
     logging.debug(f"Creating SQLAlchemy engine with DSN: {dsn}")
     engine = create_engine(dsn)
     return engine
