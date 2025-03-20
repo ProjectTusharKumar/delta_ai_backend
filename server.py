@@ -387,56 +387,56 @@ def get_all_tables():
         return jsonify({"error": f"Error fetching table names: {str(e)}"}), 500
 
 
-# @app.route("/api/table_data", methods=["GET"])
-# def get_table_data_dynamic():
-#     """
-#     API endpoint to fetch all data from a specific table.
-#     Expects a query parameter 'name' (e.g. /api/table_data?name=your_table_name).
-#     It checks if the table exists in the public schema before executing the query.
-#     """
-#     table_name = request.args.get("name")
-#     if not table_name:
-#         return jsonify({"error": "No table name provided"}), 400
-#     try:
-#         conn = get_db_connection()
-#         cur = conn.cursor()
-#         # Retrieve allowed table names from the public schema
-#         cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
-#         allowed_tables = [row[0] for row in cur.fetchall()]
-#         if table_name not in allowed_tables:
-#             cur.close()
-#             conn.close()
-#             return jsonify({"error": f"Table '{table_name}' not found"}), 404
+@app.route("/api/table_data", methods=["GET"])
+def get_table_data_dynamic():
+    """
+    API endpoint to fetch all data from a specific table.
+    Expects a query parameter 'name' (e.g. /api/table_data?name=your_table_name).
+    It checks if the table exists in the public schema before executing the query.
+    """
+    table_name = request.args.get("name")
+    if not table_name:
+        return jsonify({"error": "No table name provided"}), 400
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Retrieve allowed table names from the public schema
+        cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+        allowed_tables = [row[0] for row in cur.fetchall()]
+        if table_name not in allowed_tables:
+            cur.close()
+            conn.close()
+            return jsonify({"error": f"Table '{table_name}' not found"}), 404
 
-#         # Fetch data from the specified table
-#         query = f"SELECT * FROM {table_name}"
-#         cur.execute(query)
-#         rows = cur.fetchall()
-#         columns = [desc[0] for desc in cur.description]
-#         cur.close()
-#         conn.close()
-#         data = [dict(zip(columns, row)) for row in rows]
-#         return jsonify({"table_name": table_name, "data": data})
-#     except Exception as e:
-#         logging.error(f"Failed to fetch data for table {table_name}: {str(e)}")
-#         return jsonify({"error": f"Failed to fetch table data: {str(e)}"}), 500
+        # Fetch data from the specified table
+        query = f"SELECT * FROM {table_name}"
+        cur.execute(query)
+        rows = cur.fetchall()
+        columns = [desc[0] for desc in cur.description]
+        cur.close()
+        conn.close()
+        data = [dict(zip(columns, row)) for row in rows]
+        return jsonify({"table_name": table_name, "data": data})
+    except Exception as e:
+        logging.error(f"Failed to fetch data for table {table_name}: {str(e)}")
+        return jsonify({"error": f"Failed to fetch table data: {str(e)}"}), 500
 
-# @app.route("/api/employees", methods=["GET"])
-# def get_employees():
-#     try:
-#         conn = get_db_connection()
-#         cur = conn.cursor()
-#         cur.execute("SELECT * FROM employees")
-#         rows = cur.fetchall()
-#         columns = [desc[0] for desc in cur.description]
-#         cur.close()
-#         conn.close()
+@app.route("/api/employees", methods=["GET"])
+def get_employees():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM employees")
+        rows = cur.fetchall()
+        columns = [desc[0] for desc in cur.description]
+        cur.close()
+        conn.close()
 
-#         data = [dict(zip(columns, row)) for row in rows]
-#         return jsonify({"employees": data})
-#     except Exception as e:
-#         logging.error(f"Failed to fetch employees: {str(e)}")
-#         return jsonify({"error": f"Failed to fetch employees: {str(e)}"}), 500
+        data = [dict(zip(columns, row)) for row in rows]
+        return jsonify({"employees": data})
+    except Exception as e:
+        logging.error(f"Failed to fetch employees: {str(e)}")
+        return jsonify({"error": f"Failed to fetch employees: {str(e)}"}), 500
 
 # @app.route("/api/table_data", methods=["PUT"])
 # def update_table_data():
