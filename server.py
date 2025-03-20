@@ -339,26 +339,7 @@ def chat():
     return jsonify(results)
     
 
-@app.route("/api/table", methods=["GET"])
-def get_table_data():
-    """
-    API endpoint to fetch all data from the 'test_table' table.
-    """
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM test_table")
-        rows = cur.fetchall()
-        columns = [desc[0] for desc in cur.description]
-        cur.close()
-        conn.close()
 
-        # Convert rows to a list of dictionaries
-        data = [dict(zip(columns, row)) for row in rows]
-        return jsonify({"table_name": "test_table", "data": data})
-    except Exception as e:
-        logging.error(f"Failed to fetch table data: {str(e)}")
-        return jsonify({"error": f"Failed to fetch table data: {str(e)}"}), 500
 
 
 @app.route("/api/tables", methods=["GET"])
@@ -385,6 +366,45 @@ def get_all_tables():
     except Exception as e:
         logging.error(f"Error fetching table names: {str(e)}")
         return jsonify({"error": f"Error fetching table names: {str(e)}"}), 500
+
+
+import re
+
+@app.route("/api/table", methods=["GET"])
+def get_table_data():
+    """
+    API endpoint to fetch all data from a user-specified table.
+    The table name is provided as a query parameter, e.g.,
+      /api/table?name=your_table_name
+    """
+    table_name = request.args.get("name")
+    if not table_name:
+        return jsonify({"error": "Missing table name"}), 400
+
+    # Validate the table name to prevent SQL injection.
+    # Allow only alphanumeric characters and underscores.
+    if not re.match(r"^[A-Za-z0-9_]+$", table_name):
+        return jsonify({"error": "Invalid table name"}), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Note: Table names cannot be parameterized using placeholders.
+        # Ensure that the table name is validated before interpolating.
+        query = f"SELECT * FROM {table_name}"
+        cur.execute(query)
+        rows = cur.fetchall()
+        columns = [desc[0] for desc in cur.description]
+        cur.close()
+        conn.close()
+
+        # Convert rows to a list of dictionaries
+        data = [dict(zip(columns, row)) for row in rows]
+        return jsonify({"table_name": table_name, "data": data})
+    except Exception as e:
+        logging.error(f"Failed to fetch data from table {table_name}: {str(e)}")
+        return jsonify({"error": f"Failed to fetch data from table {table_name}: {str(e)}"}), 500
+
 
 
 @app.route("/api/table_data", methods=["GET"])
