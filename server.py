@@ -19,7 +19,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
 
 app = Flask(__name__)
-CORS(app, origins=['https://delta-ai-192s.onrender.com'])
+CORS(app, origins=['https://delta-ai-192s.onrender.com', 'http://localhost:3000'])
 
 # Database connection string from environment variable (fallback to default if not set)
 DSN = os.getenv("DATABASE_URL", "postgresql://admin:admin123@postgresql-194388-0.cloudclusters.net:19608/gsheet")
