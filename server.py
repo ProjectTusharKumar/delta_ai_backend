@@ -276,6 +276,35 @@ def get_table_data():
         logging.error(f"Failed to fetch table data: {e}")
         return jsonify({"error": f"Failed to fetch table data: {e}"}), 500
 
+@app.route("/api/upload", methods=["POST"])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({"status": "error", "message": "No file part"}), 400
+
+    file = request.files['file']
+    table_name = request.form.get('table_name')
+
+    if file.filename == '':
+        return jsonify({"status": "error", "message": "No selected file"}), 400
+
+    if not table_name:
+        return jsonify({"status": "error", "message": "Table name is required"}), 400
+
+    try:
+        # Read file using pandas
+        df = pd.read_excel(file)
+
+        # Get SQLAlchemy engine instead of psycopg2 connection
+        engine = get_db_engine()
+
+        # Use 'replace' to overwrite existing table if it exists
+        df.to_sql(table_name, engine, if_exists='replace', index=False)
+
+        return jsonify({"status": "success", "message": f"Data uploaded to table '{table_name}' successfully!"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Failed to upload data: {str(e)}"}), 500
+
+
 if __name__ == "__main__":
     # Do not use debug mode in production.
     port = int(os.environ.get("PORT", 5000))
