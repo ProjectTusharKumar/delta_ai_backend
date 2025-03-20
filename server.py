@@ -361,30 +361,30 @@ def get_table_data():
         return jsonify({"error": f"Failed to fetch table data: {str(e)}"}), 500
 
 
-# @app.route("/api/tables", methods=["GET"])
-# def get_all_tables():
-#     """
-#     API endpoint to fetch all table names from a specified schema in the database.
-#     Provide the schema as a query parameter, e.g., /api/tables?schema=databse
-#     """
-#     try:
-#         schema = request.args.get("schema", "public")
-#         conn = get_db_connection()
-#         cur = conn.cursor()
-#         query = """
-#             SELECT table_name 
-#             FROM information_schema.tables 
-#             WHERE table_schema = %s
-#         """
-#         cur.execute(query, (schema,))
-#         rows = cur.fetchall()
-#         cur.close()
-#         conn.close()
-#         tables = [row[0] for row in rows]
-#         return jsonify({"tables": tables})
-#     except Exception as e:
-#         logging.error(f"Error fetching table names: {str(e)}")
-#         return jsonify({"error": f"Error fetching table names: {str(e)}"}), 500
+@app.route("/api/tables", methods=["GET"])
+def get_all_tables():
+    """
+    API endpoint to fetch all table names from a specified schema in the database.
+    Provide the schema as a query parameter, e.g., /api/tables?schema=databse
+    """
+    try:
+        schema = request.args.get("schema", "public")
+        conn = get_db_connection()
+        cur = conn.cursor()
+        query = """
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = %s
+        """
+        cur.execute(query, (schema,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        tables = [row[0] for row in rows]
+        return jsonify({"tables": tables})
+    except Exception as e:
+        logging.error(f"Error fetching table names: {str(e)}")
+        return jsonify({"error": f"Error fetching table names: {str(e)}"}), 500
 
 
 # @app.route("/api/table_data", methods=["GET"])
