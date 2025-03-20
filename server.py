@@ -262,19 +262,33 @@ def check_connection():
 
 @app.route("/api/table", methods=["GET"])
 def get_table_data():
+    table_name = request.args.get("name")
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM test_table")
-        rows = cur.fetchall()
-        columns = [desc[0] for desc in cur.description]
+        if table_name:
+            # Fetch all rows from the specified table.
+            query = f'SELECT * FROM "{table_name}"'
+            cur.execute(query)
+            rows = cur.fetchall()
+            columns = [desc[0] for desc in cur.description]
+            data = [dict(zip(columns, row)) for row in rows]
+            response = jsonify({"table_name": table_name, "data": data})
+        else:
+            # Return a list of table names from the public schema.
+            cur.execute(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+            )
+            tables = [row[0] for row in cur.fetchall()]
+            response = jsonify({"tables": tables})
         cur.close()
         conn.close()
-        data = [dict(zip(columns, row)) for row in rows]
-        return jsonify({"table_name": "test_table", "data": data})
+        return response
     except Exception as e:
         logging.error(f"Failed to fetch table data: {e}")
         return jsonify({"error": f"Failed to fetch table data: {e}"}), 500
+
+
 
 @app.route("/api/upload", methods=["POST"])
 def upload_file():
