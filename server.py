@@ -21,7 +21,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 # PostgreSQL Database Connection
-DB_DSN = "postgresql://admin:admin123@postgresql-194388-0.cloudclusters.net:19608/gsheet"
+DB_DSN = "postgresql://neondb_owner:npg_dkVFyg40rWmz@ep-solitary-fog-a5kwywge-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
@@ -32,12 +32,12 @@ logging.debug("spaCy model loaded.")
 
 # PostgreSQL database connection using connection string URL
 def get_db_connection():
-    dsn = "postgresql://admin:admin123@postgresql-194388-0.cloudclusters.net:19608/gsheet"
+    dsn = "postgresql://neondb_owner:npg_dkVFyg40rWmz@ep-solitary-fog-a5kwywge-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
     logging.debug(f"Connecting to DB with DSN: {dsn}")
     return psycopg2.connect(dsn)
 
 def get_db_engine():
-    dsn = "postgresql://admin:admin123@postgresql-194388-0.cloudclusters.net:19608/gsheet"
+    dsn = "postgresql://neondb_owner:npg_dkVFyg40rWmz@ep-solitary-fog-a5kwywge-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
     logging.debug(f"Creating SQLAlchemy engine with DSN: {dsn}")
     engine = create_engine(dsn)
     return engine
@@ -358,12 +358,19 @@ def upload_file():
 @app.route("/api/tables", methods=["GET"])
 def get_all_tables():
     """
-    API endpoint to fetch all table names from the database.
+    API endpoint to fetch all table names from a specified schema in the database.
+    Provide the schema as a query parameter, e.g., /api/tables?schema=databse
     """
     try:
+        schema = request.args.get("schema", "public")
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+        query = """
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = %s
+        """
+        cur.execute(query, (schema,))
         rows = cur.fetchall()
         cur.close()
         conn.close()
