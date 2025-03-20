@@ -356,36 +356,22 @@ def upload_file():
         return jsonify({"status": "error", "message": f"Failed to upload data: {str(e)}"}), 500
 
 @app.route("/api/tables", methods=["GET"])
-def get_all_tables_data():
+def get_all_tables():
     """
-    API endpoint to fetch all data from all tables in the public schema.
+    API endpoint to fetch all table names from the database.
     """
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-
-        # Retrieve all table names from the public schema
         cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
-        table_names = [row[0] for row in cur.fetchall()]
-
-        all_data = {}
-        # Loop over each table to fetch its data
-        for table in table_names:
-            cur.execute(f"SELECT * FROM {table}")
-            rows = cur.fetchall()
-            # Get column names for the current table
-            columns = [desc[0] for desc in cur.description]
-            # Convert each row into a dictionary
-            data = [dict(zip(columns, row)) for row in rows]
-            all_data[table] = data
-
+        rows = cur.fetchall()
         cur.close()
         conn.close()
-
-        return jsonify({"data": all_data})
+        tables = [row[0] for row in rows]
+        return jsonify({"tables": tables})
     except Exception as e:
-        logging.error(f"Failed to fetch table data: {str(e)}")
-        return jsonify({"error": f"Failed to fetch table data: {str(e)}"}), 500
+        logging.error(f"Error fetching table names: {str(e)}")
+        return jsonify({"error": f"Error fetching table names: {str(e)}"}), 500
 
 
 @app.route("/api/table_data", methods=["GET"])
