@@ -17,11 +17,14 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(mes
 
 load_dotenv()
 
+
 app = Flask(__name__)
 CORS(app)
-
 # PostgreSQL Database Connection
 DB_DSN = "postgresql://neondb_owner:npg_dkVFyg40rWmz@ep-solitary-fog-a5kwywge-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
 
 # Load spaCy model
 nlp = spacy.load("en_core_web_sm")
@@ -29,12 +32,12 @@ logging.debug("spaCy model loaded.")
 
 # PostgreSQL database connection using connection string URL
 def get_db_connection():
-    dsn = DB_DSN
+    dsn = "postgresql://neondb_owner:npg_dkVFyg40rWmz@ep-solitary-fog-a5kwywge-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
     logging.debug(f"Connecting to DB with DSN: {dsn}")
     return psycopg2.connect(dsn)
 
 def get_db_engine():
-    dsn = DB_DSN
+    dsn = "postgresql://neondb_owner:npg_dkVFyg40rWmz@ep-solitary-fog-a5kwywge-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
     logging.debug(f"Creating SQLAlchemy engine with DSN: {dsn}")
     engine = create_engine(dsn)
     return engine
@@ -150,38 +153,20 @@ def find_best_match(query, query_words):
                 logging.debug(f"Fuzzy match: {word} -> {match} (score: {score})")
     return list(set(found_schema))
 
-# Database field mapping for PostgreSQL columns (use correct casing as in your database)
+# Database field mapping for PostgreSQL columns
 DB_FIELD_MAPPINGS = {
-    "dob": "Dob",                  # Assuming header is "Dob"
-    "doj": "DOJ",                  # Assuming header is "DOJ"
-    "salary": "Salary",            # Assuming header is "Salary"
-    "phone number": "Phone Number",# Assuming header is "Phone Number"
-    "skills": "Skills",
-    "attendance": "Attendance",
-    "last year projects": "Last Year Projects",
-    "past projects": "Past Projects",
-    "completed projects": "Completed Projects",
-    "currently on": "Currently On",
-    "total projects": "Total Projects"
+    "dob": "dob",
+    "DOJ": "doj",
+    "salary": "salary",
+    "phone number": "phone_number",
+    "skills": "skills",
+    "attendance": "attendance",
+    "last year projects": "last_year_projects",
+    "past projects": "past_projects",
+    "completed projects": "completed_projects",
+    "currently on": "currently_on",
+    "total projects": "total_projects"
 }
-
-def normalize_requested_fields(found_schema):
-    """
-    Normalize the user or AI returned field names to the exact database column names.
-    It uses the DB_FIELD_MAPPINGS dictionary to perform the conversion.
-    """
-    normalized = []
-    for field in found_schema:
-        key = field.lower()
-        if key in DB_FIELD_MAPPINGS:
-            normalized.append(DB_FIELD_MAPPINGS[key])
-            logging.debug(f"Normalized field: {field} -> {DB_FIELD_MAPPINGS[key]}")
-        else:
-            # Fallback: Capitalize each word (this might need adjustment based on your schema)
-            fallback = " ".join(word.capitalize() for word in field.split())
-            normalized.append(fallback)
-            logging.debug(f"Fallback normalized field: {field} -> {fallback}")
-    return normalized
 
 def clean_sql_query(query):
     """
@@ -271,7 +256,6 @@ def extract_context_and_schema_name(query):
     query = query.strip()
     logging.debug(f"Original query: {query}")
     
-    # Apply spelling corrections
     for wrong, correct in SPELLING_CORRECTIONS.items():
         query = query.replace(wrong, correct)
     
@@ -282,14 +266,16 @@ def extract_context_and_schema_name(query):
     
     response = {"query": query, "context": context, "schema_name": found_schema}
     if context:
-        # Normalize the requested fields using the DB_FIELD_MAPPINGS
-        normalized_fields = normalize_requested_fields(found_schema)
-        logging.debug(f"Normalized requested fields: {normalized_fields}")
-        employee_result = get_employee_data(context[0], normalized_fields)
+        # Optimize: Capitalize each schema field if it is all lowercase (to match database columns)
+        capitalized_schema = [s.capitalize() if s.islower() else s for s in found_schema]
+        logging.debug(f"Using capitalized schema: {capitalized_schema}")
+        employee_result = get_employee_data(context[0], capitalized_schema)
         response["employee_data"] = employee_result
     else:
         response["error"] = "No valid employee name found in query."
     return response
+
+
 
 @app.route("/api/check_connection", methods=["GET"])
 def check_connection():
@@ -330,6 +316,8 @@ def upload_file():
     except Exception as e:
         return jsonify({"status": "error", "message": f"Failed to upload data: {str(e)}"}), 500
 
+
+
 @app.route("/api/chat", methods=["POST"])
 def chat():
     """
@@ -349,6 +337,10 @@ def chat():
         result = extract_context_and_schema_name(query)
         results[f"query{i}"] = result
     return jsonify(results)
+    
+
+
+
 
 @app.route("/api/tables", methods=["GET"])
 def get_all_tables():
@@ -374,6 +366,7 @@ def get_all_tables():
     except Exception as e:
         logging.error(f"Error fetching table names: {str(e)}")
         return jsonify({"error": f"Error fetching table names: {str(e)}"}), 500
+
 
 import re
 
@@ -411,6 +404,8 @@ def get_table_data():
     except Exception as e:
         logging.error(f"Failed to fetch data from table {table_name}: {str(e)}")
         return jsonify({"error": f"Failed to fetch data from table {table_name}: {str(e)}"}), 500
+
+
 
 @app.route("/api/table_data", methods=["GET"])
 def get_table_data_dynamic():
@@ -463,5 +458,93 @@ def get_employees():
         logging.error(f"Failed to fetch employees: {str(e)}")
         return jsonify({"error": f"Failed to fetch employees: {str(e)}"}), 500
 
+# @app.route("/api/table_data", methods=["PUT"])
+# def update_table_data():
+#     # Read table name and record id from query parameters
+#     table_name = request.args.get("name")
+#     record_id = request.args.get("id")
+    
+#     if not table_name or not record_id:
+#         return jsonify({"error": "Missing table name or record id"}), 400
+
+#     data = request.json
+#     if not data:
+#         return jsonify({"error": "No update data provided"}), 400
+
+#     try:
+#         conn = get_db_connection()
+#         cur = conn.cursor()
+        
+#         # If updating the employees table, use a fixed query with predefined columns
+#         if table_name == "employees":
+#             query = """
+#                 UPDATE employees
+#                 SET name = %s, dob = %s, phone_number = %s, skills = %s, doj = %s, salary = %s,
+#                     attendance = %s, last_year_projects = %s, completed_projects = %s,
+#                     currently_on = %s, past_projects = %s
+#                 WHERE id = %s
+#             """
+#             values = (
+#                 data.get("name"), data.get("dob"), data.get("phone_number"), data.get("skills"),
+#                 data.get("doj"), data.get("salary"), data.get("attendance"), data.get("last_year_projects"),
+#                 data.get("completed_projects"), data.get("currently_on"), data.get("past_projects"),
+#                 record_id
+#             )
+#         else:
+#             # For any other table, build the SET clause dynamically
+#             set_clause = ", ".join([f"{key} = %s" for key in data.keys()])
+#             values = list(data.values())
+#             values.append(record_id)
+#             query = f"UPDATE {table_name} SET {set_clause} WHERE id = %s"
+        
+#         cur.execute(query, values)
+#         conn.commit()
+#         cur.close()
+#         conn.close()
+
+#         return jsonify({"message": "Record updated successfully!"})
+#     except Exception as e:
+#         logging.error(f"Failed to update record: {str(e)}")
+#         return jsonify({"error": f"Failed to update record: {str(e)}"}), 500
+
+# @app.route("/api/employee/<int:id>", methods=["DELETE"])
+# def delete_employee(id):
+#     try:
+#         conn = get_db_connection()
+#         cur = conn.cursor()
+#         cur.execute("DELETE FROM employees WHERE id = %s", (id,))
+#         conn.commit()
+#         cur.close()
+#         conn.close()
+
+#         return jsonify({"message": "Employee deleted successfully!"})
+#     except Exception as e:
+#         logging.error(f"Failed to delete employee: {str(e)}")
+#         return jsonify({"error": f"Failed to delete employee: {str(e)}"}), 500
+
+# @app.route("/api/employees/upload", methods=["POST"])
+# def upload_employees():
+#     if 'file' not in request.files:
+#         return jsonify({"status": "error", "message": "No file part"}), 400
+
+#     file = request.files['file']
+#     if file.filename == '':
+#         return jsonify({"status": "error", "message": "No selected file"}), 400
+
+#     try:
+#         # Read Excel file using pandas
+#         df = pd.read_excel(file)
+
+#         # Get SQLAlchemy engine
+#         engine = get_db_engine()
+
+#         # Use 'replace' to overwrite existing data
+#         df.to_sql('employees', engine, if_exists='replace', index=False)
+
+#         return jsonify({"status": "success", "message": "Employee data updated successfully!"})
+#     except Exception as e:
+#         logging.error(f"Failed to upload employee data: {str(e)}")
+#         return jsonify({"status": "error", "message": f"Failed to upload data: {str(e)}"}), 500
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True)"this is my backend code update here"
