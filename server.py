@@ -228,14 +228,11 @@ def generate_sql_query_via_ai(employee_name, requested_fields):
         return None
 
 def get_employee_data(employee_name, requested_fields):
-    """
-    Try to fetch employee data using each AI-generated query until one returns data.
-    """
     ai_generated_queries = generate_sql_query_via_ai(employee_name, requested_fields)
     if not ai_generated_queries:
         return {"error": "Failed to generate SQL queries using AI model."}
     
-    logging.debug(f"Executing queries: {ai_generated_queries} with parameter: {employee_name}")
+    logging.debug(f"Executing AI-generated queries for {employee_name}: {ai_generated_queries}")
     for query in ai_generated_queries:
         try:
             conn = get_db_connection()
@@ -247,17 +244,41 @@ def get_employee_data(employee_name, requested_fields):
             conn.close()
             
             if row and len(row) == len(columns):
-                logging.debug(f"Successfully fetched row: {row}")
+                logging.debug(f"Successfully fetched row: {row} using query: {query}")
                 employee_data = dict(zip(columns, row))
                 return {"ai_generated_query": query, "data": employee_data}
             else:
-                logging.debug(f"Query executed but no matching data found: {query}")
+                logging.debug(f"No data returned using query: {query}")
         except Exception as e:
             logging.error(f"Query failed: {query}. Error: {str(e)}")
             # Continue to try the next query
             continue
 
+    # Fallback: try a manually built query for the first requested field
+    fallback_query = default_query(employee_name, requested_fields[0])
+    logging.debug(f"Using fallback query: {fallback_query}")
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(fallback_query, (employee_name,))
+        row = cur.fetchone()
+        columns = [desc[0] for desc in cur.description] if cur.description else []
+        cur.close()
+        conn.close()
+        
+        if row and len(row) == len(columns):
+            logging.debug(f"Successfully fetched row using fallback query: {row}")
+            employee_data = dict(zip(columns, row))
+            return {"fallback_query": fallback_query, "data": employee_data}
+    except Exception as e:
+        logging.error(f"Fallback query failed: {fallback_query}. Error: {str(e)}")
+
     return {"error": f"Failed to fetch data for {employee_name} from all generated queries."}
+
+def default_query(employee_name, requested_field):
+    # Using lower-case field name for the fallback query
+    return f"SELECT {requested_field} FROM test_table WHERE name = %s"
+
 
 
 
