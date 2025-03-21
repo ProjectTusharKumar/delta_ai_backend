@@ -184,20 +184,21 @@ def clean_sql_query(query):
 
 def generate_sql_query_via_ai(employee_name, requested_fields):
     """
-    Use the provided AI model (via OpenRouter) to generate a parameterized PostgreSQL query.
-    The prompt instructs the model to generate a query to fetch the specified fields from the test_table table.
-    Here, 'name' is used in the WHERE clause.
+    Generate two parameterized PostgreSQL queries:
+    - First: assumes columns are in lower-case.
+    - Second: assumes columns are capitalized.
+    Use %s as a placeholder for the employee name.
+    Return both queries separated by a newline.
     """
     prompt = (
-    f"Generate two parameterized PostgreSQL queries to retrieve the following fields "
-    f"from the test_table table for an employee with the name '{employee_name}'. "
-    f"The fields to retrieve are: {', '.join(requested_fields)}. "
-    "The first query should assume that the columns are defined in lower-case. "
-    "The second query should assume that the columns are defined in capitalized form. "
-    "Use %s as a placeholder for the name in the WHERE clause. "
-    "Return only the two SQL queries, each on a separate line, without any markdown formatting."
-)
-
+        f"Generate two parameterized PostgreSQL queries to retrieve the following fields "
+        f"from the test_table table for an employee with the name '{employee_name}'. "
+        f"The fields to retrieve are: {', '.join(requested_fields)}. "
+        "The first query should assume that the columns are defined in lower-case. "
+        "The second query should assume that the columns are defined in capitalized form. "
+        "Use %s as a placeholder for the name in the WHERE clause. "
+        "Return only the two SQL queries, each on a separate line, without any markdown formatting."
+    )
     logging.debug(f"Prompt for AI: {prompt}")
     
     payload = {
@@ -217,43 +218,47 @@ def generate_sql_query_via_ai(employee_name, requested_fields):
         response = requests.post(url, headers=headers, data=json.dumps(payload))
         response.raise_for_status()
         response_json = response.json()
-        generated_query = response_json["choices"][0]["message"]["content"].strip()
-        logging.debug(f"Raw AI generated query: {generated_query}")
-        cleaned_query = clean_sql_query(generated_query)
-        return cleaned_query
+        generated_queries = response_json["choices"][0]["message"]["content"].strip()
+        logging.debug(f"Raw AI generated queries: {generated_queries}")
+        # Clean up and return the generated queries (as a list)
+        queries = [clean_sql_query(q) for q in generated_queries.splitlines() if q.strip()]
+        return queries
     except Exception as e:
         logging.error(f"Error generating SQL query: {e}")
         return None
 
 def get_employee_data(employee_name, requested_fields):
-    ai_generated_query = generate_sql_query_via_ai(employee_name, requested_fields)
-    if not ai_generated_query:
-        return {"error": "Failed to generate SQL query using AI model."}
+    """
+    Try to fetch employee data using each AI-generated query until one returns data.
+    """
+    ai_generated_queries = generate_sql_query_via_ai(employee_name, requested_fields)
+    if not ai_generated_queries:
+        return {"error": "Failed to generate SQL queries using AI model."}
     
-    # Split the query in case multiple queries were returned
-    queries = [q.strip() for q in ai_generated_query.splitlines() if q.strip()]
-    logging.debug(f"Executing queries: {queries} with parameter: {employee_name}")
-    
-    for query in queries:
+    logging.debug(f"Executing queries: {ai_generated_queries} with parameter: {employee_name}")
+    for query in ai_generated_queries:
         try:
             conn = get_db_connection()
             cur = conn.cursor()
             cur.execute(query, (employee_name,))
             row = cur.fetchone()
-            # Check if the query returned any columns
             columns = [desc[0] for desc in cur.description] if cur.description else []
             cur.close()
             conn.close()
             
             if row and len(row) == len(columns):
-                logging.debug(f"Fetched row: {row}")
+                logging.debug(f"Successfully fetched row: {row}")
                 employee_data = dict(zip(columns, row))
                 return {"ai_generated_query": query, "data": employee_data}
+            else:
+                logging.debug(f"Query executed but no matching data found: {query}")
         except Exception as e:
             logging.error(f"Query failed: {query}. Error: {str(e)}")
-            # Try the next query if available
-            
+            # Continue to try the next query
+            continue
+
     return {"error": f"Failed to fetch data for {employee_name} from all generated queries."}
+
 
 
 def extract_context_and_schema_name(query):
