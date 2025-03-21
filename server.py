@@ -226,29 +226,35 @@ def generate_sql_query_via_ai(employee_name, requested_fields):
         return None
 
 def get_employee_data(employee_name, requested_fields):
-    """
-    Use the AI-generated SQL query to fetch employee data from PostgreSQL.
-    Returns both the generated query (for display/debug) and the data.
-    """
     ai_generated_query = generate_sql_query_via_ai(employee_name, requested_fields)
     if not ai_generated_query:
         return {"error": "Failed to generate SQL query using AI model."}
     
-    logging.debug(f"Executing SQL query: {ai_generated_query} with parameter: {employee_name}")
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(ai_generated_query, (employee_name,))
-        row = cur.fetchone()
-        columns = [desc[0] for desc in cur.description] if cur.description else []
-        cur.close()
-        conn.close()
-        logging.debug(f"Fetched row: {row}")
-        employee_data = dict(zip(columns, row)) if row else {}
-        return {"ai_generated_query": ai_generated_query, "data": employee_data}
-    except Exception as e:
-        logging.error(f"Failed to fetch data for {employee_name}. Error: {str(e)}")
-        return {"error": f"Failed to fetch data for {employee_name}. Error: {str(e)}"}
+    # Split the query in case multiple queries were returned
+    queries = [q.strip() for q in ai_generated_query.splitlines() if q.strip()]
+    logging.debug(f"Executing queries: {queries} with parameter: {employee_name}")
+    
+    for query in queries:
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute(query, (employee_name,))
+            row = cur.fetchone()
+            # Check if the query returned any columns
+            columns = [desc[0] for desc in cur.description] if cur.description else []
+            cur.close()
+            conn.close()
+            
+            if row and len(row) == len(columns):
+                logging.debug(f"Fetched row: {row}")
+                employee_data = dict(zip(columns, row))
+                return {"ai_generated_query": query, "data": employee_data}
+        except Exception as e:
+            logging.error(f"Query failed: {query}. Error: {str(e)}")
+            # Try the next query if available
+            
+    return {"error": f"Failed to fetch data for {employee_name} from all generated queries."}
+
 
 def extract_context_and_schema_name(query):
     """
