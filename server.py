@@ -340,16 +340,19 @@ def upload_file():
     try:
         # Read file using pandas
         df = pd.read_excel(file)
+        # Convert all DataFrame headers to lowercase
+        df.columns = [col.lower() for col in df.columns]
+        logging.debug(f"DataFrame columns after lowercasing: {df.columns.tolist()}")
 
-        # Get SQLAlchemy engine instead of psycopg2 connection
+        # Get SQLAlchemy engine and save the DataFrame to the specified table
         engine = get_db_engine()
-
-        # Use 'replace' to overwrite existing table if it exists
         df.to_sql(table_name, engine, if_exists='replace', index=False)
 
         return jsonify({"status": "success", "message": f"Data uploaded to table '{table_name}' successfully!"})
     except Exception as e:
+        logging.error(f"Failed to upload data: {str(e)}")
         return jsonify({"status": "error", "message": f"Failed to upload data: {str(e)}"}), 500
+
 
 
 
