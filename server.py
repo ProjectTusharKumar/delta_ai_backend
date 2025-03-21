@@ -189,12 +189,15 @@ def generate_sql_query_via_ai(employee_name, requested_fields):
     Here, 'name' is used in the WHERE clause.
     """
     prompt = (
-        f"Generate a parameterized PostgreSQL query to retrieve the following fields "
-        f"from the test_table table for an employee with the name '{employee_name}'. "
-        f"The fields to retrieve are: {', '.join(requested_fields)}. "
-        "Use %s as a placeholder for the name in the WHERE clause. "
-        "Return only the SQL query without any markdown formatting."
-    )
+    f"Generate two parameterized PostgreSQL queries to retrieve the following fields "
+    f"from the test_table table for an employee with the name '{employee_name}'. "
+    f"The fields to retrieve are: {', '.join(requested_fields)}. "
+    "The first query should assume that the columns are defined in lower-case. "
+    "The second query should assume that the columns are defined in capitalized form. "
+    "Use %s as a placeholder for the name in the WHERE clause. "
+    "Return only the two SQL queries, each on a separate line, without any markdown formatting."
+)
+
     logging.debug(f"Prompt for AI: {prompt}")
     
     payload = {
