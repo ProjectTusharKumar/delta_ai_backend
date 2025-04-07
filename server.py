@@ -24,7 +24,7 @@ nlp = spacy.load("en_core_web_sm")
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # MongoDB config
 MONGO_URI = os.getenv(
