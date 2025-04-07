@@ -4,7 +4,7 @@ import ast
 import json
 import logging
 import requests
-import spacy 
+import spacy
 import pandas as pd
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
@@ -17,13 +17,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 load_dotenv()
 
 # Configure logging
-# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
 
 # Load spaCy model
 nlp = spacy.load("en_core_web_sm")
 
 # Initialize Flask app
 app = Flask(__name__)
+# Allow all origins (for development)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # MongoDB config
@@ -35,7 +36,8 @@ MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "user_db")
 
 def get_mongo_client():
     logging.debug(f"Connecting to MongoDB using URI: {MONGO_URI}")
-    return MongoClient(MONGO_URI)
+    # Create a new MongoClient instance on demand (avoids fork issues)
+    return MongoClient(MONGO_URI, connect=True)
 
 def get_database():
     client = get_mongo_client()
@@ -44,6 +46,7 @@ def get_database():
     except Exception:
         db = client[MONGO_DB_NAME]
     return db
+
 def check_db_connection():
     try:
         client = get_mongo_client()
@@ -53,12 +56,6 @@ def check_db_connection():
     except Exception as e:
         logging.error(f"MongoDB connection failed: {str(e)}")
         return False, f"MongoDB connection failed: {str(e)}"
-
-
-# Setup collections
-client = get_mongo_client()
-db = client.get_database(MONGO_DB_NAME)
-users_collection = db["users"]
 
 # OpenRouter API config (if needed)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -138,9 +135,6 @@ def find_best_match(query, query_words):
 
 # Predefined MongoDB query generator using dynamic projection.
 def generate_mongo_query_via_ai(employee_name, requested_fields):
-    """
-    Predefine a MongoDB find query using the requested fields as the projection.
-    """
     projection = {field: 1 for field in requested_fields}
     projection["_id"] = 0
     mongo_query = {
@@ -160,15 +154,12 @@ def get_employee_data(employee_name, requested_fields):
     try:
         db = get_database()
         collection = db["employees"]
-        # Step 1: Verify employee exists.
         employee_exists = collection.find_one({"name": employee_name})
         if not employee_exists:
             return {"error": f"No employee found with name {employee_name}"}
-        # Step 2: Get projected data.
         projected_data = collection.find_one({"name": employee_name}, mongo_query["projection"])
         if not projected_data:
             return {"error": f"No requested fields found for {employee_name}"}
-        # Filter out any fields with None values.
         filtered_data = {k: v for k, v in projected_data.items() if v is not None}
         if not filtered_data:
             return {"error": f"None of the requested fields were found for {employee_name}"}
@@ -204,6 +195,8 @@ def register():
     email = data.get("email")
     if not username or not password or not email:
         return jsonify({"error": "All fields are required"}), 400
+    db = get_database()
+    users_collection = db["users"]
     if users_collection.find_one({"username": username}):
         return jsonify({"error": "Username already exists"}), 400
     hashed_password = generate_password_hash(password)
@@ -217,6 +210,8 @@ def login():
     password = request.args.get("password")
     if not username or not password:
         return jsonify({"error": "Username and password required"}), 400
+    db = get_database()
+    users_collection = db["users"]
     user = users_collection.find_one({"username": username})
     if user and check_password_hash(user["password"], password):
         return jsonify({"message": "Login successful", "email": user["email"]}), 200
@@ -300,11 +295,6 @@ def get_employees():
         logging.error(f"Failed to fetch employees: {str(e)}")
         return jsonify({"error": f"Failed to fetch employees: {str(e)}"}), 500
 
-@app.route('/health', methods=['GET'])
-def health():
-    return "Server is healthy", 200
-
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=True)
