@@ -38,8 +38,13 @@ MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "user_db")
 
 def get_mongo_client():
     logging.debug(f"Connecting to MongoDB using URI: {MONGO_URI}")
-    # Create a new MongoClient instance on demand (connection pooling is built-in)
-    return MongoClient(MONGO_URI, connect=True)
+    return MongoClient(
+        MONGO_URI,
+        connect=True,
+        ssl=True,
+        ssl_cert_reqs=ssl.CERT_REQUIRED,  # use CERT_NONE for testing only
+        serverSelectionTimeoutMS=20000
+    )
 
 def get_database():
     client = get_mongo_client()
