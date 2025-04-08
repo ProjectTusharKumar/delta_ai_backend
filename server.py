@@ -30,7 +30,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 # MongoDB config. DO NOT instantiate client globally to avoid forking issues.
 MONGO_URI = os.getenv(
     "MONGO_URI", 
-    "mongodb+srv://itstusharkumar15:admin@cluster0.wnyhv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    "mongodb+srv://itstusharkumar15:admin@cluster0.wnyhv.mongodb.net/?retryWrites=true&w=majority&tls=true&tlsAllowInvalidCertificates=true&appName=Cluster0"
 )
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "user_db")
 
