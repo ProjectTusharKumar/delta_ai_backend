@@ -42,10 +42,12 @@ def get_mongo_client():
     return MongoClient(
         MONGO_URI,
         connect=True,
-        ssl=True,
-        ssl_cert_reqs=ssl.CERT_REQUIRED,  # use CERT_NONE for testing only
+        tls=True,
+        # For testing only. In production, remove the next line:
+        tlsAllowInvalidCertificates=True,
         serverSelectionTimeoutMS=20000
     )
+
 
 def get_database():
     client = get_mongo_client()
