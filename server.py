@@ -226,6 +226,10 @@ def api_check_connection():
     else:
         return jsonify({"connection": False, "message": message}), 500
 
+@app.route("/")
+def home():
+    return "API is live ✅", 200
+
 @app.route("/api/upload", methods=["POST"])
 def upload_file():
     if 'file' not in request.files:
