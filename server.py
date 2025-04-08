@@ -17,6 +17,17 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # Load environment variables
 load_dotenv()
 
+import os
+from pymongo import MongoClient
+
+uri = "mongodb+srv://itstusharkumar15:admin@cluster0.wnyhv.mongodb.net/mydatabase?retryWrites=true&w=majority&tls=true&tlsAllowInvalidCertificates=true"
+client = MongoClient(uri, serverSelectionTimeoutMS=20000)
+
+try:
+    client.server_info()
+    print("✅ Connected to MongoDB!")
+except Exception as e:
+    print("❌ Connection failed:", e)
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
 
