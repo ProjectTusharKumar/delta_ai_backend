@@ -3,7 +3,7 @@ Flask-Cors
 python-dotenv
 spacy
 pandas
-pymongo>=4.0.0
+pymongo>=4.7.2
 rapidfuzz
 requests
 Werkzeug
