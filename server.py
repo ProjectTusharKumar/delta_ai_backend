@@ -24,10 +24,10 @@ nlp = spacy.load("en_core_web_sm")
 
 # Initialize Flask app
 app = Flask(__name__)
-# Allow all origins (for development)
+# Allow all origins (for development; adjust as needed for production)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# MongoDB config
+# MongoDB config. DO NOT instantiate client globally to avoid forking issues.
 MONGO_URI = os.getenv(
     "MONGO_URI", 
     "mongodb+srv://itstusharkumar15:admin@cluster0.wnyhv.mongodb.net/mydatabase?retryWrites=true&w=majority&appName=Cluster0"
@@ -36,7 +36,7 @@ MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "user_db")
 
 def get_mongo_client():
     logging.debug(f"Connecting to MongoDB using URI: {MONGO_URI}")
-    # Create a new MongoClient instance on demand (avoids fork issues)
+    # Create a new MongoClient instance on demand (connection pooling is built-in)
     return MongoClient(MONGO_URI, connect=True)
 
 def get_database():
@@ -61,7 +61,7 @@ def check_db_connection():
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat")
 
-# Schema and NLP helper configuration
+# Schema and helper configuration
 schema_name = [
     "dob", "doj", "salary", "phone number", "skills",
     "attendance", "last year projects", "past projects", "completed projects",
