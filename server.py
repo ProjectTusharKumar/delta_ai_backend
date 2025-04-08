@@ -27,10 +27,12 @@ app = Flask(__name__)
 # Allow all origins (for development; adjust as needed for production)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# MongoDB config. DO NOT instantiate client globally to avoid forking issues.
+# MongoDB config.
+# For testing purposes, we add tls=true and tlsAllowInvalidCertificates=true.
+# In production, remove tlsAllowInvalidCertificates=true once the environment trusts the Atlas certificates.
 MONGO_URI = os.getenv(
     "MONGO_URI", 
-    "mongodb+srv://itstusharkumar15:admin@cluster0.wnyhv.mongodb.net/mydatabase?retryWrites=true&w=majority&tls=true"
+    "mongodb+srv://itstusharkumar15:admin@cluster0.wnyhv.mongodb.net/mydatabase?retryWrites=true&w=majority&tls=true&tlsAllowInvalidCertificates=true"
 )
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "user_db")
 
@@ -50,6 +52,7 @@ def get_database():
 def check_db_connection():
     try:
         client = get_mongo_client()
+        # Use ping to check the connection
         client.admin.command('ping')
         logging.debug("MongoDB connection successful.")
         return True, "MongoDB connection successful."
